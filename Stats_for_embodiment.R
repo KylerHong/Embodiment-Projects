@@ -9,6 +9,8 @@ devtools::install_github("DejanDraschkow/mixedpower")
 
 ## NLME install this package - Rich Suggestion!
 
+#hello
+
 library(readr)
 library(tidyverse)
 library(pwr2ppl)
