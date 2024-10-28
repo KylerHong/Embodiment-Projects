@@ -7,6 +7,15 @@ devtools::install_github("DejanDraschkow/mixedpower")
 
 ##install.packages("Matrix")
 
+## For saving code to GitHub Type:
+# git add "Stats_for_embodiment.R"
+# git commit -m "initials, date, change"
+# git push
+
+## For pulling code from github
+# git pull
+# NOTE: For this to work you must be in this directory: C:\0_School\UC_Davis\Research\Schofield_Lab\Embodiment\embodiment_data_analysis\Embodiment-Projects
+
 ## NLME install this package - Rich Suggestion!
 
 #hello
@@ -753,3 +762,26 @@ corrplot(cor_matrix,
          col = colorRampPalette(c("blue", "white", "red"))(200), # Color gradient
          title = "Variance-Covariance Matrix", 
          mar = c(0, 0, 1, 0))    # Add some space for the title
+
+
+### DEVELOPING THE EFFECT SIZE SUMMARY TABLE:
+
+## STEP 1: Adding two columns to the data: One for Active vs. Passive and the second for Buzz vs. No Buzz
+new_data <- read_csv("sona_combined_Participants.csv",show_col_types = FALSE) %>%
+  mutate(position = factor(POS),
+         feedback = factor(FDBK),
+         delay = factor(DLY),
+         Participant = factor(Participant))
+
+for(i in 0:(nrow(new_data))) {
+  if(new_data[i, 5] == ){
+    x = 1
+    full_sum_know_response[i, 3] <- sum 
+  }
+  
+  if((full_sum_know_response[i,2] == 2) && (full_sum_know_response[i+1, 2] == 3)){
+    full_sum_know_response <- full_sum_know_response[-(i+1),]
+    
+    
+  }
+}
