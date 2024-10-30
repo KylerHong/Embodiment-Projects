@@ -51,7 +51,7 @@ legend_data <- read_csv("sona_combined_Participants.csv",show_col_types = FALSE)
          delay = factor(DLY),
          Participant = factor(Participant))
 
-write.csv(legend_data,"Embodiment_data.csv")
+# write.csv(legend_data,"Embodiment_data.csv")
 
 ## head(legend_data)
 
@@ -712,6 +712,12 @@ FULL_mlmer <- lmer(values ~ trait:(position*feedback) - 1 + (trait - 1|Participa
                      check.nobs.vs.nlev="ignore",
                      check.nobs.vs.nRE="ignore"))
 
+#install.packages("reshape2")
+#install.packages("corrplot")
+library(corrplot)
+library(reshape2)
+library(ggplot2)
+
 VarCorr(FULL_mlmer)
 summary(FULL_mlmer)
 print(FULL_mlmer, correlation=TRUE)
@@ -719,13 +725,6 @@ vcov(FULL_mlmer)
 
 vv1 <- VarCorr(FULL_mlmer)
 corrplot.mixed(cov2cor(vv1$Participant),upper="ellipse")
-
-## Attempt at Plotting -------------
-#install.packages("reshape2")
-#install.packages("corrplot")
-library(corrplot)
-library(reshape2)
-library(ggplot2)
 
 vcov_matrix <- vcov(FULL_mlmer)
 vcov_matrix_regular <- as.matrix(vcov(FULL_mlmer))
@@ -767,21 +766,223 @@ corrplot(cor_matrix,
 ### DEVELOPING THE EFFECT SIZE SUMMARY TABLE:
 
 ## STEP 1: Adding two columns to the data: One for Active vs. Passive and the second for Buzz vs. No Buzz
-new_data <- read_csv("sona_combined_Participants.csv",show_col_types = FALSE) %>%
-  mutate(position = factor(POS),
-         feedback = factor(FDBK),
-         delay = factor(DLY),
-         Participant = factor(Participant))
+new_data <- legend_data
+Active <- c()
+Buzz <- c()
 
-for(i in 0:(nrow(new_data))) {
-  if(new_data[i, 5] == ){
+for(i in 1:(nrow(new_data))) {
+  if(new_data[i, 4] == 'BUZ'){
     x = 1
-    full_sum_know_response[i, 3] <- sum 
+    y = 1
+    Active[i] <- x
+    Buzz[i] <- y
   }
   
-  if((full_sum_know_response[i,2] == 2) && (full_sum_know_response[i+1, 2] == 3)){
-    full_sum_know_response <- full_sum_know_response[-(i+1),]
-    
-    
+  if(new_data[i, 4] == 'NB'){
+    x = 1
+    y = 0
+    Active[i] <- x
+    Buzz[i] <- y
+  }
+  
+  if(new_data[i, 4] == 'WATCH'){
+    x = 0
+    y = 0
+    Active[i] <- x
+    Buzz[i] <- y
   }
 }
+
+#print(Active)
+#print(Buzz)
+
+new_data$Active <- factor(Active)
+new_data$Buzz <- factor(Buzz)
+
+# New data is set up. Step 1 is complete.
+
+## STEP 2: Create LMER and GMER for EACH dependent variable replacing "Feedback" with "Active" and "Buzz".
+##         Since we are now working with three variables, we must get models for all interactions = 10 models/variable
+
+# Intentional Binding
+IB1_gmer <- glmmTMB(formula = IB_DIFF ~ position+Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+IB1_lmer <- lmer(formula = IB_DIFF ~ position+Active+Buzz +(1|Participant), data = new_data)
+IB2_gmer <- glmmTMB(formula = IB_DIFF ~ position*Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+IB2_lmer <- lmer(formula = IB_DIFF ~ position*Active+Buzz +(1|Participant), data = new_data)
+IB3_gmer <- glmmTMB(formula = IB_DIFF ~ position+Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+IB3_lmer <- lmer(formula = IB_DIFF ~ position+Active*Buzz +(1|Participant), data = new_data)
+IB4_gmer <- glmmTMB(formula = IB_DIFF ~ Active+position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+IB4_lmer <- lmer(formula = IB_DIFF ~ Active+position*Buzz +(1|Participant), data = new_data)
+IB5_gmer <- glmmTMB(formula = IB_DIFF ~ position*Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+IB5_lmer <- lmer(formula = IB_DIFF ~ position*Active*Buzz +(1|Participant), data = new_data)
+
+# Proprioceptive Drift
+PD1_gmer <- glmmTMB(formula = PD ~ position+Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+PD1_lmer <- lmer(formula = PD ~ position+Active+Buzz +(1|Participant), data = new_data)
+PD2_gmer <- glmmTMB(formula = PD ~ position*Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+PD2_lmer <- lmer(formula = PD ~ position*Active+Buzz +(1|Participant), data = new_data)
+PD3_gmer <- glmmTMB(formula = PD ~ position+Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+PD3_lmer <- lmer(formula = PD ~ position+Active*Buzz +(1|Participant), data = new_data)
+PD4_gmer <- glmmTMB(formula = PD ~ Active+position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+PD4_lmer <- lmer(formula = PD ~ Active+position*Buzz +(1|Participant), data = new_data)
+PD5_gmer <- glmmTMB(formula = PD ~ position*Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+PD5_lmer <- lmer(formula = PD ~ position*Active*Buzz +(1|Participant), data = new_data)
+
+# Agency Questionnaire
+AGN1_gmer <- glmmTMB(formula = agn_score ~ position+Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+AGN1_lmer <- lmer(formula = agn_score ~ position+Active+Buzz +(1|Participant), data = new_data)
+AGN2_gmer <- glmmTMB(formula = agn_score ~ position*Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+AGN2_lmer <- lmer(formula = agn_score ~ position*Active+Buzz +(1|Participant), data = new_data)
+AGN3_gmer <- glmmTMB(formula = agn_score ~ position+Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+AGN3_lmer <- lmer(formula = agn_score ~ position+Active*Buzz +(1|Participant), data = new_data)
+AGN4_gmer <- glmmTMB(formula = agn_score ~ Active+position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+AGN4_lmer <- lmer(formula = agn_score ~ Active+position*Buzz +(1|Participant), data = new_data)
+AGN5_gmer <- glmmTMB(formula = agn_score ~ position*Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+AGN5_lmer <- lmer(formula = agn_score ~ position*Active*Buzz +(1|Participant), data = new_data)
+
+# Ownership Questionnaire
+OWN1_gmer <- glmmTMB(formula = own_score ~ position+Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+OWN1_lmer <- lmer(formula = own_score ~ position+Active+Buzz +(1|Participant), data = new_data)
+OWN2_gmer <- glmmTMB(formula = own_score ~ position*Active+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+OWN2_lmer <- lmer(formula = own_score ~ position*Active+Buzz +(1|Participant), data = new_data)
+OWN3_gmer <- glmmTMB(formula = own_score ~ position+Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+OWN3_lmer <- lmer(formula = own_score ~ position+Active*Buzz +(1|Participant), data = new_data)
+OWN4_gmer <- glmmTMB(formula = own_score ~ Active+position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+OWN4_lmer <- lmer(formula = own_score ~ Active+position*Buzz +(1|Participant), data = new_data)
+OWN5_gmer <- glmmTMB(formula = own_score ~ position*Active*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+OWN5_lmer <- lmer(formula = own_score ~ position*Active*Buzz +(1|Participant), data = new_data)
+
+# New models have been created total = 32... step 2 complete.
+
+## STEP 3: Finding models which best fit the data using the AIC score from ANOVA. Must run Anova for each dependent variable
+# IB ANOVA
+#anova(IB1_gmer,IB1_lmer,IB2_gmer,IB2_lmer,IB3_gmer,IB3_lmer,IB4_gmer,IB4_lmer)
+anova(IB1_gmer,IB2_gmer,IB3_gmer,IB4_gmer,IB5_gmer)
+anova(IB1_lmer,IB2_lmer,IB3_lmer,IB4_lmer,IB5_lmer)
+# PD ANOVA
+#anova(PD1_gmer,PD1_lmer,PD2_gmer,PD2_lmer,PD3_gmer,PD3_lmer,PD4_gmer,PD4_lmer)
+anova(PD1_gmer,PD2_gmer,PD3_gmer,PD4_gmer,PD5_gmer)
+anova(PD1_lmer,PD2_lmer,PD3_lmer,PD4_lmer,PD5_lmer)
+# AGN ANOVA
+#anova(AGN1_gmer,AGN1_lmer,AGN2_gmer,AGN2_lmer,AGN3_gmer,AGN3_lmer,AGN4_gmer,AGN4_lmer)
+anova(AGN1_gmer,AGN2_gmer,AGN3_gmer,AGN4_gmer,AGN5_gmer)
+anova(AGN1_lmer,AGN2_lmer,AGN3_lmer,AGN4_lmer,AGN5_lmer)
+# OWN ANOVA
+#anova(OWN1_gmer,OWN1_lmer,OWN2_gmer,OWN2_lmer,OWN3_gmer,OWN3_lmer,OWN4_gmer,OWN4_lmer)
+anova(OWN1_gmer,OWN2_gmer,OWN3_gmer,OWN4_gmer,OWN5_gmer)
+anova(OWN1_lmer,OWN2_lmer,OWN3_lmer,OWN4_lmer,OWN5_lmer)
+
+# WINNERS: GMER for all!
+# IB1_gmer or IB2_gmer
+# PD5_gmer
+# AGN5_gmer
+# OWN5_gmer
+
+# Step 3 complete.
+
+## STEP 4: Summarize the selected models with QQ plots !!!
+# IB
+simulateResiduals(IB1_gmer,plot=T)
+simulateResiduals(IB2_gmer,plot=T)
+#PD
+simulateResiduals(PD4_gmer,plot=T)
+# AGN
+simulateResiduals(AGN4_gmer,plot=T)
+# OWN
+simulateResiduals(OWN4_gmer,plot=T)
+
+# These plots look rough :( ... Let me look at the LMER ones
+## STEP 5: Looking at best LMER models and their residuals
+# IB
+simulateResiduals(IB1_lmer,plot=T)
+simulateResiduals(IB2_lmer,plot=T)
+#PD
+simulateResiduals(PD4_lmer,plot=T)
+# AGN
+simulateResiduals(AGN4_lmer,plot=T)
+# OWN
+simulateResiduals(OWN4_lmer,plot=T)
+
+### New Approach, Building Models based on two variable interactions instead of three (get rid of correlation)
+### Will ask how to do three way interaction if we have to.
+## Building Models:
+# IB
+IB_lmer_actv_pos <- lmer(formula = IB_DIFF ~ position*Active +(1|Participant), data = new_data)
+IB_gmer_actv_pos <- glmmTMB(formula = IB_DIFF ~ position*Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+IB2_lmer_buz_pos <- lmer(formula = IB_DIFF ~ position*Buzz +(1|Participant), data = new_data)
+IB2_gmer_buz_pos <- glmmTMB(formula = IB_DIFF ~ position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+
+IB3_lmer_actv_pos <- lmer(formula = IB_DIFF ~ position+Active +(1|Participant), data = new_data)
+IB3_gmer_actv_pos <- glmmTMB(formula = IB_DIFF ~ position+Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+IB4_lmer_buz_pos <- lmer(formula = IB_DIFF ~ position+Buzz +(1|Participant), data = new_data)
+IB4_gmer_buz_pos <- glmmTMB(formula = IB_DIFF ~ position+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+# PD
+PD_lmer_actv_pos <- lmer(formula = PD ~ position*Active +(1|Participant), data = new_data)
+PD_gmer_actv_pos <- glmmTMB(formula = PD ~ position*Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+PD2_lmer_buz_pos <- lmer(formula = PD ~ position*Buzz +(1|Participant), data = new_data)
+PD2_gmer_buz_pos <- glmmTMB(formula = PD ~ position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+
+PD3_lmer_actv_pos <- lmer(formula = PD ~ position+Active +(1|Participant), data = new_data)
+PD3_gmer_actv_pos <- glmmTMB(formula = PD ~ position+Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+PD4_lmer_buz_pos <- lmer(formula = PD ~ position+Buzz +(1|Participant), data = new_data)
+PD4_gmer_buz_pos <- glmmTMB(formula = PD ~ position+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+# AGN
+AGN_lmer_actv_pos <- lmer(formula = agn_div ~ position*Active +(1|Participant), data = new_data)
+AGN_gmer_actv_pos <- glmmTMB(formula = agn_div ~ position*Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+AGN2_lmer_buz_pos <- lmer(formula = agn_div ~ position*Buzz +(1|Participant), data = new_data)
+AGN2_gmer_buz_pos <- glmmTMB(formula = agn_div ~ position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+
+AGN3_lmer_actv_pos <- lmer(formula = agn_div ~ position+Active +(1|Participant), data = new_data)
+AGN3_gmer_actv_pos <- glmmTMB(formula = agn_div ~ position+Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+AGN4_lmer_buz_pos <- lmer(formula = agn_div ~ position+Buzz +(1|Participant), data = new_data)
+AGN4_gmer_buz_pos <- glmmTMB(formula = agn_div ~ position+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+# OWN
+OWN_lmer_actv_pos <- lmer(formula = own_div ~ position*Active +(1|Participant), data = new_data)
+OWN_gmer_actv_pos <- glmmTMB(formula = own_div ~ position*Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+OWN2_lmer_buz_pos <- lmer(formula = own_div ~ position*Buzz +(1|Participant), data = new_data)
+OWN2_gmer_buz_pos <- glmmTMB(formula = own_div ~ position*Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+
+OWN3_lmer_actv_pos <- lmer(formula = own_div ~ position+Active +(1|Participant), data = new_data)
+OWN3_gmer_actv_pos <- glmmTMB(formula = own_div ~ position+Active +(1|Participant), data=new_data, family = tweedie(link = "log"))
+OWN4_lmer_buz_pos <- lmer(formula = own_div ~ position+Buzz +(1|Participant), data = new_data)
+OWN4_gmer_buz_pos <- glmmTMB(formula = own_div ~ position+Buzz +(1|Participant), data=new_data, family = tweedie(link = "log"))
+
+## Comparison Tests:
+# IB ANOVA
+#anova(IB1_gmer,IB1_lmer,IB2_gmer,IB2_lmer,IB3_gmer,IB3_lmer,IB4_gmer,IB4_lmer)
+anova(IB_gmer_actv_pos,IB3_gmer_actv_pos)
+anova(IB2_gmer_buz_pos,IB4_gmer_buz_pos)
+anova(IB_lmer_actv_pos,IB3_lmer_actv_pos)
+anova(IB2_lmer_buz_pos,IB4_lmer_buz_pos)
+# PD ANOVA
+#anova(PD1_gmer,PD1_lmer,PD2_gmer,PD2_lmer,PD3_gmer,PD3_lmer,PD4_gmer,PD4_lmer)
+anova(PD_gmer_actv_pos,PD3_gmer_actv_pos)
+anova(PD2_gmer_buz_pos,PD4_gmer_buz_pos)
+anova(PD_lmer_actv_pos,PD3_lmer_actv_pos)
+anova(PD2_lmer_buz_pos,PD4_lmer_buz_pos)
+# AGN ANOVA
+#anova(AGN1_gmer,AGN1_lmer,AGN2_gmer,AGN2_lmer,AGN3_gmer,AGN3_lmer,AGN4_gmer,AGN4_lmer)
+anova(AGN_gmer_actv_pos,AGN3_gmer_actv_pos)
+anova(AGN2_gmer_buz_pos,AGN4_gmer_buz_pos)
+anova(AGN_lmer_actv_pos,AGN3_lmer_actv_pos)
+anova(AGN2_lmer_buz_pos,AGN4_lmer_buz_pos)
+# OWN ANOVA
+#anova(OWN1_gmer,OWN1_lmer,OWN2_gmer,OWN2_lmer,OWN3_gmer,OWN3_lmer,OWN4_gmer,OWN4_lmer)
+anova(OWN_gmer_actv_pos,OWN3_gmer_actv_pos)
+anova(OWN2_gmer_buz_pos,OWN4_gmer_buz_pos)
+anova(OWN_lmer_actv_pos,OWN3_lmer_actv_pos)
+anova(OWN2_lmer_buz_pos,OWN4_lmer_buz_pos)
+
+## Simulating Residuals of Models:
+# IB:
+simulateResiduals(IB3_gmer_actv_pos,plot=T)
+simulateResiduals(IB4_gmer_buz_pos,plot=T)
+# PD:
+simulateResiduals(PD3_gmer_actv_pos,plot=T)
+simulateResiduals(PD2_gmer_buz_pos,plot=T)
+# AGN:
+simulateResiduals(AGN_lmer_actv_pos,plot=T)
+simulateResiduals(AGN4_gmer_buz_pos,plot=T)
+# OWN:
+simulateResiduals(OWN_gmer_actv_pos,plot=T)
+simulateResiduals(OWN2_gmer_buz_pos,plot=T)
